@@ -1,47 +1,90 @@
 const express = require('express');
-const {promises: fs} = require("fs");
 const router = express.Router();
+const {promises: fs} = require("fs");
+const os = require("os");
+const {join} = require("path");
+
 
 router.get("/", (req, res) => {
     res.json({message: "Got it!"})
 })
 
-// PREMIERE VERSION QUI FONCTIONNE PAS
-// app.get('/api/drive', async (req, res) => {
-//         const file = await fs.promises.readdir('/', {withFilesType: true})
-//         const datafile = file.map(file => {
-//             return obj = {
-//                 name: file.name,
-//                 isFolder: file.isDirectory()
-//             }
-//         })
+
+//------------------------------------------------api/drive-----------------------------------
+// const tmpdir = os.tmpdir();
+// const apiDir = join(tmpdir, "");
+// router.get('/api/drive', async (req, res) => {
 //
-//         res.send(datafile)
-//     })
+//     try {
+//         const files = await fs.readdir(apiDir);
+//         const dataFiles = await Promise.all(files.map(async (fileName) => {
+//             const fileInfo = await fs.stat(join(apiDir, fileName));
+//             return {
+//
+//
+//                 name: fileName,
+//                 isFolder: fileInfo.isDirectory(),
+//             };
+//         }));
+//         res.json(dataFiles);
+//     } catch (error) {
+//         console.error("Erreur lors de la lecture du répertoire :", error);
+//         res.status(500).json({error: "Erreur lors de la lecture du répertoire"});
+//     }
+// })
+// ;
 
-                    // Gestionnaire de route pour /api/drive/
-router.get('/api/drive', async (req, res) => {
-// Définit une route GET sur '/api/drive'. Lorsqu'une requête GET est reçue à cette URL, la fonction de rappel fournie sera exécutée.
 
-    const files = await fs.readdir('/');
-    // Lecture du contenu du répertoire racine et stockage dans la variable 'files'.
+// ---------------Retourne une liste contenant les dossiers et fichiers à la racine du “drive”---------------------------
 
-    const dataFiles = await Promise.all(files.map(async (fileName) => {
-        // Utilisation de 'map' pour itérer sur chaque élément de 'files' et création d'une nouvelle liste 'dataFiles'.
+// router.get("/api/drive/", (req, res) => {
+//     const data = [
+//         { name: "Personnel", isFolder: true },
+//         { name: "avis imposition", size: 1337, isFolder: true }
+//     ];
+//     // Retourne la liste au format JSON
+//     res.status(200).json(data);
+// });
 
-        fileInfo = await fs.stat('/' + fileName);
-        // Obtention des informations sur le fichier ou le répertoire actuel et stockage dans 'fileInfo'.
+//---------------------------------------Retourne le contenu de {name}--------------------------------------------------
 
-        return {
-            // Création d'un objet avec deux propriétés : 'name' qui contient le nom du fichier ou du répertoire, et 'isFolder' qui indique si le fichier est un répertoire ou non.
-            name: fileName,
-            isFolder: fileInfo.isDirectory()
-        };
-    }));
-    res.json(dataFiles);
-    // Envoi de la liste 'dataFiles' sous forme de réponse JSON à la requête HTTP.
 
+let data = [
+    {name: "Autre dossier", isFolder: true},
+    {name: "passeport", size: 1003, isFolder: false}
+];
+
+router.get("/api/drive/", (req, res) => {
+    res.status(200).json(data);
 });
 
+router.get("/api/drive/:name", (req, res) => {
+    const name = req.params.name;
+    const item = data.find(item => item.name === name);
 
+    if (item) {
+        if (item.isFolder) {
+            res.status(200).json(item);
+        } else {
+            res.status(200).json(item)
+            // .type('application/octet-stream')
+            // .send(`Contenu du fichier ${item.name}`);
+        }
+    } else {
+        res.status(404).send("Fichier ou dossier non trouvé");
+    }
+});
+
+//-------------------------------------------------Créer un dossier avec le nom {name}---------------------------------------------------------------------
+router.post("/api/drive?", (req, res) => {
+
+try{
+    fs.mkdir()
+}
+catch{
+    console.log("error creating drive");
+}
+})
+
+// Exporte le routeur
 module.exports = router;
