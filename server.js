@@ -1,24 +1,9 @@
 function start() {
-    const os = require('os');
 
-    console.log("home directory:" + getUserHome());
-    console.log("temp directory:" + os.tmpdir());
-
-    function getUserHome() {
-
-        // From process.env
-        return process.env[(process.platform == 'win32')
-            ? 'USERPROFILE' : 'HOME'];
-    }
-
-
-
-
-
-
+    const {promises: fs} = require("fs");
     const express = require('express');
-    const port = process.env.PORT || 3000;
     const app = express();
+    const morgan = require('morgan');
 
     app.listen(3000, () => {
         console.log('Serveur démarré sur le port 3000');
@@ -41,6 +26,7 @@ function start() {
 //route.js---------------------------------------------------------------------
     const route = require("./api/drive/route");
     app.use("", route)
+
 }
 
 module.exports = start;
