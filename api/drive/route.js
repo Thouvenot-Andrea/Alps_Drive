@@ -91,6 +91,41 @@ router.post("/api/drive/:folder", async (req, res) => {
     }
 });
 
+//-------------------------------------Suppression d’un dossier ou d’un fichier avec le nom-----------------------------
+router.delete("/api/drive/:name", async (req, res) => {
+    const name = req.params.name;
+    const filePath = path.join(os.tmpdir(), name);
+    try {
+        const fileInfos = await fs.stat(filePath);
+        if (fileInfos.isDirectory()) {
+            await fs.rmdir(filePath, {recursive: true});
+        } else {
+            await fs.unlink(filePath);
+        }
+        res.sendStatus(200);
+    } catch (error) {
+        res.status(400).send(`Impossible de supprimer le fichier ou le dossier ${name}: ${error}`);
+    }
+});
+
+
+router.delete("/api/drive/:folder/:name", async (req, res) => {
+    const {folder, name} = req.params;
+    const folderPath = path.join(tmpdir, folder,name);
+    try {
+        const fileInfos = await fs.stat(folderPath);
+        if (fileInfos.isDirectory()) {
+            await fs.rmdir(folderPath, {recursive: true});
+        }
+        else{
+            await fs.unlink(folderPath);
+        }
+        res.sendStatus(200);
+    } catch (error) {
+        res.status(400).send('erreur')
+    }
+})
+//----------------------------------------Créer un fichier à la racine du “drive”---------------------------------------
 
 
 //--------------------------------------------------version simplifier--------------------------------------------------
