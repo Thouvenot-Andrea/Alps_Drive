@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const {promises: fs} = require("fs");
+const fs = require('fs').promises;
 const os = require("os");
+const path = require('path');
 const {join} = require("path");
 
 
@@ -9,82 +10,130 @@ router.get("/", (req, res) => {
     res.json({message: "Got it!"})
 })
 
-
-//------------------------------------------------api/drive-----------------------------------
-// const tmpdir = os.tmpdir();
-// const apiDir = join(tmpdir, "");
-// router.get('/api/drive', async (req, res) => {
-//
-//     try {
-//         const files = await fs.readdir(apiDir);
-//         const dataFiles = await Promise.all(files.map(async (fileName) => {
-//             const fileInfo = await fs.stat(join(apiDir, fileName));
-//             return {
-//
-//
-//                 name: fileName,
-//                 isFolder: fileInfo.isDirectory(),
-//             };
-//         }));
-//         res.json(dataFiles);
-//     } catch (error) {
-//         console.error("Erreur lors de la lecture du répertoire :", error);
-//         res.status(500).json({error: "Erreur lors de la lecture du répertoire"});
-//     }
-// })
-// ;
-
-
 // ---------------Retourne une liste contenant les dossiers et fichiers à la racine du “drive”---------------------------
+const tmpdir = join(os.tmpdir(),"/");
+router.get('/api/drive', async (req, res) => {
 
-// router.get("/api/drive/", (req, res) => {
-//     const data = [
-//         { name: "Personnel", isFolder: true },
-//         { name: "avis imposition", size: 1337, isFolder: true }
-//     ];
-//     // Retourne la liste au format JSON
-//     res.status(200).json(data);
-// });
+    try {
+        const files = await fs.readdir(tmpdir);
+        const dataFiles = await Promise.all(files.map(async fileName => {
+            const fileInfo = await fs.stat(path.join(tmpdir, fileName));
+            return {
+                name: fileName,
+                isFolder: fileInfo.isDirectory(),
+                size: fileInfo.size
+            };
+        }));
+        res.json(dataFiles);
+    } catch (error) {
+        res.status(500).send(`Erreur lors de la récupération du contenu du drive: ${error}`);
+    }
+})
 
-//---------------------------------------Retourne le contenu de {name}--------------------------------------------------
-
-
-let data = [
-    {name: "Autre dossier", isFolder: true},
-    {name: "passeport", size: 1003, isFolder: false}
-];
-
-router.get("/api/drive/", (req, res) => {
-    res.status(200).json(data);
-});
-
-router.get("/api/drive/:name", (req, res) => {
+// //---------------------------------------Retourne le contenu de {name}--------------------------------------------------
+router.get("/api/drive/:name", async (req, res) => {// ajout de ?
     const name = req.params.name;
-    const item = data.find(item => item.name === name);
-
-    if (item) {
-        if (item.isFolder) {
-            res.status(200).json(item);
+    const filePath = path.join(tmpdir, name)
+    try{
+        const fileInfo = await fs.stat(filePath);
+        if (fileInfo.isDirectory()) {
+            const files = await fs.readdir(filePath);
+            const dataFiles = await Promise.all(files.map(async fileName => {
+                const fileInfo = await fs.stat(path.join(filePath, fileName));
+                return {
+                    name: fileName,
+                    isFolder: fileInfo.isDirectory(),
+                    size: fileInfo.size
+                };
+            }));
+            res.status(200).json(dataFiles);
         } else {
-            res.status(200).json(item)
-            // .type('application/octet-stream')
-            // .send(`Contenu du fichier ${item.name}`);
+            const fileStream = fs.createReadStream(filePath);
+            res.set('Content-Type', 'application/octet-stream');
+            fileStream.pipe(res);
         }
-    } else {
-        res.status(404).send("Fichier ou dossier non trouvé");
+    } catch (error) {
+        console.error(error);
+        res.status(404).send("Error");
     }
 });
 
+
+
+
+
 //-------------------------------------------------Créer un dossier avec le nom {name}---------------------------------------------------------------------
-router.post("/api/drive?", (req, res) => {
+router.post("/api/drive", async (req, res) => {
+    const {name} = req.query;
+    if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
+        return res.status(400).send("Le nom du dossier ne doit contenir que des caractères alphanumériques, - ou _");
+    }
+    const folderPath = path.join(os.tmpdir(), name);
+    try {
+        await fs.mkdir(folderPath);
+        res.sendStatus(201);
+    } catch (error) {
+        res.status(500).send(`Impossible de créer le dossier: ${error}`);
+    }
+});
+router.post("/api/drive/:folder", async (req, res) => {
+    const { folder } = req.params;
+    const { name } = req.query;
+    const folderPath = path.join(tmpdir, folder, name);
+    if (!name || !/^[a-zA-Z0-9_-]+$/.test(name)) {
+        return res.status(400).send("Le nom du dossier n'est pas correct, il doit contenir uniquement des caractères alphanumériques.");
+    }
+    try {
+        await fs.mkdir(folderPath, { recursive: true });
+        res.sendStatus(201);
+    } catch (error) {
+        res.status(500).send(`Impossible de créer le dossier: ${error}`);
+    }
+});
 
-try{
-    fs.mkdir()
-}
-catch{
-    console.log("error creating drive");
-}
-})
 
+
+//--------------------------------------------------version simplifier--------------------------------------------------
+// router.get("/api/drive/:name?", async (req, res) => {// ajout de ?
+//     const name = req.params.name;
+//     const filePath =  name ? path.join(tmpdir, name): tmpdir // juste ajouter name ? et : tmpdir
+//     try {
+//         const fileInfo = await fs.stat(filePath);
+//         if (fileInfo.isDirectory()) {
+//             const files = await fs.readdir(filePath);
+//             const dataFiles = await Promise.all(files.map(async fileName => {
+//                 const fileInfo = await fs.stat(path.join(filePath, fileName));
+//                 return {
+//                     name: fileName,
+//                     isFolder: fileInfo.isDirectory(),
+//                     size: fileInfo.size
+//                 };
+//             }));
+//             res.status(200).json(dataFiles);
+//         } else {
+//             const fileStream = fs.createReadStream(filePath);
+//             res.set('Content-Type', 'application/octet-stream');
+//             fileStream.pipe(res);
+//         }
+//     } catch (error) {
+//         console.error(error);
+//         res.status(404).send("Error");
+//     }
+// });
+// router.post("/api/drive/:folder?", async (req, res) => {
+//     const { folder } = req.params;
+//     const { name } = req.query;
+//     const folderPath = folder ? path.join(tmpdir, folder, name) : path.join(tmpdir, name);
+//     // utilisé pour créer le chemin complet du dossier à l'intérieur du dossier spécifié : utilisé pour créer le chemin complet du dossier à la racine du "drive
+//     if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
+//         return res.status(400).send("Le nom du dossier ne doit contenir que des caractères alphanumériques, - ou _");
+//     }
+//     try {
+//         await fs.mkdir(folderPath, { recursive: true });
+//         res.sendStatus(201);
+//     } catch (error) {
+//         res.status(500).send(`Impossible de créer le dossier: ${error}`);
+//     }
+// });
 // Exporte le routeur
 module.exports = router;
