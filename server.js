@@ -1,9 +1,8 @@
+const {promises: fs} = require("fs");
+const express = require('express');
+const app = express();
+const morgan = require('morgan');
 function start() {
-
-    const {promises: fs} = require("fs");
-    const express = require('express');
-    const app = express();
-    const morgan = require('morgan');
 
     app.listen(3000, () => {
         console.log('Serveur démarré sur le port 3000');
