@@ -129,20 +129,49 @@ router.delete("/api/drive/:folder/:name", async (req, res) => {
 router.put('/api/drive', async (req, res) => {
     try{
         await rootFile(req, res)
+
     }catch (e) {
         return res.sendStatus(400)
     }
 })
-async function rootFile(req, res) {
-    await fs.copyFile(req.files.file.file, join(tmpdir, req.files.file.filename))
-    await fs.rm(join(tmpdir, req.files.file.uuid), {recursive: true})
-    console.log(req.files)
-    return res.sendStatus(200)
-}
+// async function rootFile(req, res) {
+//     await fs.copyFile(req.files.file.file, join(tmpdir, req.files.file.filename))
+//     await fs.rm(join(tmpdir, req.files.file.uuid), {recursive: true})
+//     console.log(req.files)
+//     return res.sendStatus(200)
+// }
 
 
+router.put('/api/drive/:folder', async (req, res) => {
+    const folder = req.params.folder;
+    const uploadDir = path.join(tmpdir, folder);
 
+    // Vérifier si le dossier existe
+    try {
+        await fs.access(uploadDir, fs.constants.F_OK);
+    } catch (error) {
+        // Si le dossier n'existe pas, retourner une erreur 404
+        return res.sendStatus(404);
+    }
 
+    try {
+        // Vérifier si un fichier est présent dans la requête
+        if (!req.files || !req.files.file) {
+            return res.sendStatus(400);
+        }
+
+        // Copier le fichier dans le dossier spécifié
+        await fs.copyFile(req.files.file.file, path.join(uploadDir, req.files.file.filename));
+
+        // Supprimer le fichier temporaire
+        await fs.rm(join(tmpdir, req.files.file.uuid), {recursive: true})
+
+        return res.sendStatus(201);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
 
 //--------------------------------------------------version simplifier--------------------------------------------------
 // const tmpdir = join(os.tmpdir(),"/");
