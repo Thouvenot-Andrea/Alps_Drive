@@ -48,13 +48,14 @@ router.get("/api/drive/:name", async (req, res) => {// ajout de ?
             }));
             res.status(200).json(dataFiles);
         } else {
-            const fileStream = fs.createReadStream(filePath);
+            const fileData = await fs.readFile(filePath);
             res.set('Content-Type', 'application/octet-stream');
-            fileStream.pipe(res);
+            res.send(fileData);
         }
     } catch (error) {
         console.error(error);
         res.status(404).send("Error");
+        console.error('Erreur lors de la récupération du contenu du fichier :', error);
     }
 });
 
@@ -68,7 +69,7 @@ router.post("/api/drive", async (req, res) => {
     if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
         return res.status(400).send("Le nom du dossier ne doit contenir que des caractères alphanumériques, - ou _");
     }
-    const folderPath = path.join(os.tmpdir(), name);
+    const folderPath = path.join(tmpdir, name);
     try {
         await fs.mkdir(folderPath);
         res.sendStatus(201);
@@ -77,14 +78,15 @@ router.post("/api/drive", async (req, res) => {
     }
 });
 router.post("/api/drive/:folder", async (req, res) => {
-    const { folder } = req.params;
-    const { name } = req.query;
-    const folderPath = path.join(tmpdir, folder, name);
+    const {folder} = req.params;
+    const {name} = req.query;
+
     if (!name || !/^[a-zA-Z0-9_-]+$/.test(name)) {
         return res.status(400).send("Le nom du dossier n'est pas correct, il doit contenir uniquement des caractères alphanumériques.");
     }
+    const folderPath = path.join(tmpdir, folder, name);
     try {
-        await fs.mkdir(folderPath, { recursive: true });
+        await fs.mkdir(folderPath, {recursive: true});
         res.sendStatus(201);
     } catch (error) {
         res.status(500).send(`Impossible de créer le dossier: ${error}`);
@@ -111,13 +113,12 @@ router.delete("/api/drive/:name", async (req, res) => {
 
 router.delete("/api/drive/:folder/:name", async (req, res) => {
     const {folder, name} = req.params;
-    const folderPath = path.join(tmpdir, folder,name);
+    const folderPath = path.join(tmpdir, folder, name);
     try {
         const fileInfos = await fs.stat(folderPath);
         if (fileInfos.isDirectory()) {
             await fs.rmdir(folderPath, {recursive: true});
-        }
-        else{
+        } else {
             await fs.unlink(folderPath);
         }
         res.sendStatus(200);
