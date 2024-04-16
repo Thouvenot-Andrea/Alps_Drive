@@ -126,9 +126,26 @@ router.delete("/api/drive/:folder/:name", async (req, res) => {
     }
 })
 //----------------------------------------Créer un fichier à la racine du “drive”---------------------------------------
+router.put('/api/drive', async (req, res) => {
+    try{
+        await rootFile(req, res)
+    }catch (e) {
+        return res.sendStatus(400)
+    }
+})
+async function rootFile(req, res) {
+    await fs.copyFile(req.files.file.file, join(tmpdir, req.files.file.filename))
+    await fs.rm(join(tmpdir, req.files.file.uuid), {recursive: true})
+    console.log(req.files)
+    return res.sendStatus(200)
+}
+
+
+
 
 
 //--------------------------------------------------version simplifier--------------------------------------------------
+// const tmpdir = join(os.tmpdir(),"/");
 // router.get("/api/drive/:name?", async (req, res) => {// ajout de ?
 //     const name = req.params.name;
 //     const filePath =  name ? path.join(tmpdir, name): tmpdir // juste ajouter name ? et : tmpdir
@@ -170,5 +187,21 @@ router.delete("/api/drive/:folder/:name", async (req, res) => {
 //         res.status(500).send(`Impossible de créer le dossier: ${error}`);
 //     }
 // });
-// Exporte le routeur
+// router.delete("/api/drive/:folder?/:name", async (req, res) => {
+//     const {folder, name} = req.params;
+//     const folderPath = folder ? path.join(tmpdir, folder,name) : path.join(tmpdir,name);
+//     try {
+//         const fileInfos = await fs.stat(folderPath);
+//         if (fileInfos.isDirectory()) {
+//             await fs.rmdir(folderPath, {recursive: true});
+//         }
+//         else{
+//             await fs.unlink(folderPath);
+//         }
+//         res.sendStatus(200);
+//     } catch (error) {
+//         res.status(400).send('erreur')
+//     }
+// })
+
 module.exports = router;
