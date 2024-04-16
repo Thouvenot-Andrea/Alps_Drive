@@ -53,9 +53,8 @@ router.get("/api/drive/:name", async (req, res) => {// ajout de ?
             res.send(fileData);
         }
     } catch (error) {
-        console.error(error);
-        res.status(404).send("Error");
         console.error('Erreur lors de la récupération du contenu du fichier :', error);
+        res.status(500).send('Erreur lors de la récupération du contenu du fichier.');
     }
 });
 
