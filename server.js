@@ -2,6 +2,16 @@ const {promises: fs} = require("fs");
 const express = require('express');
 const app = express();
 const morgan = require('morgan');
+const path = require('path');
+const os = require("os");
+const tmpdir = path.join(os.tmpdir(), "/");
+const busboy = require("express-busboy");
+const {join} = require("path");
+busboy.extend(app,{
+    upload:true,
+    path:tmpdir
+})
+
 function start() {
 
     app.listen(3000, () => {
