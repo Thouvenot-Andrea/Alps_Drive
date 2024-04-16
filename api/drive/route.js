@@ -11,7 +11,7 @@ router.get("/", (req, res) => {
 })
 
 // ---------------Retourne une liste contenant les dossiers et fichiers à la racine du “drive”---------------------------
-const tmpdir = join(os.tmpdir(),"/");
+const tmpdir = join(os.tmpdir(), "/");
 router.get('/api/drive', async (req, res) => {
 
     try {
@@ -34,7 +34,7 @@ router.get('/api/drive', async (req, res) => {
 router.get("/api/drive/:name", async (req, res) => {// ajout de ?
     const name = req.params.name;
     const filePath = path.join(tmpdir, name)
-    try{
+    try {
         const fileInfo = await fs.stat(filePath);
         if (fileInfo.isDirectory()) {
             const files = await fs.readdir(filePath);
@@ -48,18 +48,15 @@ router.get("/api/drive/:name", async (req, res) => {// ajout de ?
             }));
             res.status(200).json(dataFiles);
         } else {
-            const fileStream = fs.createReadStream(filePath);
+            const fileData = await fs.readFile(filePath);
             res.set('Content-Type', 'application/octet-stream');
-            fileStream.pipe(res);
+            res.send(fileData);
         }
     } catch (error) {
-        console.error(error);
-        res.status(404).send("Error");
+        console.error('Erreur lors de la récupération du contenu du fichier :', error);
+        res.status(500).send('Erreur lors de la récupération du contenu du fichier.');
     }
 });
-
-
-
 
 
 //-------------------------------------------------Créer un dossier avec le nom {name}---------------------------------------------------------------------
@@ -68,7 +65,7 @@ router.post("/api/drive", async (req, res) => {
     if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
         return res.status(400).send("Le nom du dossier ne doit contenir que des caractères alphanumériques, - ou _");
     }
-    const folderPath = path.join(os.tmpdir(), name);
+    const folderPath = path.join(tmpdir, name);
     try {
         await fs.mkdir(folderPath);
         res.sendStatus(201);
@@ -77,14 +74,15 @@ router.post("/api/drive", async (req, res) => {
     }
 });
 router.post("/api/drive/:folder", async (req, res) => {
-    const { folder } = req.params;
-    const { name } = req.query;
-    const folderPath = path.join(tmpdir, folder, name);
+    const {folder} = req.params;
+    const {name} = req.query;
+
     if (!name || !/^[a-zA-Z0-9_-]+$/.test(name)) {
         return res.status(400).send("Le nom du dossier n'est pas correct, il doit contenir uniquement des caractères alphanumériques.");
     }
+    const folderPath = path.join(tmpdir, folder, name);
     try {
-        await fs.mkdir(folderPath, { recursive: true });
+        await fs.mkdir(folderPath, {recursive: true});
         res.sendStatus(201);
     } catch (error) {
         res.status(500).send(`Impossible de créer le dossier: ${error}`);
@@ -111,13 +109,12 @@ router.delete("/api/drive/:name", async (req, res) => {
 
 router.delete("/api/drive/:folder/:name", async (req, res) => {
     const {folder, name} = req.params;
-    const folderPath = path.join(tmpdir, folder,name);
+    const folderPath = path.join(tmpdir, folder, name);
     try {
         const fileInfos = await fs.stat(folderPath);
         if (fileInfos.isDirectory()) {
             await fs.rmdir(folderPath, {recursive: true});
-        }
-        else{
+        } else {
             await fs.unlink(folderPath);
         }
         res.sendStatus(200);
@@ -126,9 +123,45 @@ router.delete("/api/drive/:folder/:name", async (req, res) => {
     }
 })
 //----------------------------------------Créer un fichier à la racine du “drive”---------------------------------------
+router.put('/api/drive', async (req, res) => {
+    try {
+        await fs.copyFile(req.files.file.file, join(tmpdir, req.files.file.filename))
+        await fs.rm(join(tmpdir, req.files.file.uuid), {recursive: true})
+        console.log(req.files)
+        return res.sendStatus(200)
+
+    } catch (e) {
+        return res.sendStatus(400)
+    }
+})
+
+router.put('/api/drive/:folder', async (req, res) => {
+    const folder = req.params.folder;
+    const uploadDir = path.join(tmpdir, folder);
+//Si {folder} n’existe pas
+    try {
+        await fs.access(uploadDir, fs.constants.F_OK);
+    } catch (error) {
+        return res.sendStatus(404);
+    }
+//Si aucun fichier n’est présent dans la requête
+    if (!req.files || !req.files.file) {
+        return res.sendStatus(400);
+    }
+
+    try {
+        await fs.copyFile(req.files.file.file, path.join(uploadDir, req.files.file.filename));
+        await fs.rm(join(tmpdir, req.files.file.uuid), { recursive: true });
+        return res.sendStatus(201);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
 
 
 //--------------------------------------------------version simplifier--------------------------------------------------
+// const tmpdir = join(os.tmpdir(),"/");
 // router.get("/api/drive/:name?", async (req, res) => {// ajout de ?
 //     const name = req.params.name;
 //     const filePath =  name ? path.join(tmpdir, name): tmpdir // juste ajouter name ? et : tmpdir
@@ -170,5 +203,55 @@ router.delete("/api/drive/:folder/:name", async (req, res) => {
 //         res.status(500).send(`Impossible de créer le dossier: ${error}`);
 //     }
 // });
-// Exporte le routeur
+// router.delete("/api/drive/:folder?/:name", async (req, res) => {
+//     const {folder, name} = req.params;
+//     const folderPath = folder ? path.join(tmpdir, folder,name) : path.join(tmpdir,name);
+//     try {
+//         const fileInfos = await fs.stat(folderPath);
+//         if (fileInfos.isDirectory()) {
+//             await fs.rmdir(folderPath, {recursive: true});
+//         }
+//         else{
+//             await fs.unlink(folderPath);
+//         }
+//         res.sendStatus(200);
+//     } catch (error) {
+//         res.status(400).send('erreur')
+//     }
+// })
+// router.put('/api/drive/:folder?', async (req, res) => {
+//     const folder = req.params.folder;
+//     const uploadDir = folder ? path.join(tmpdir, folder) : tmpdir;
+//
+//     // Si un dossier est spécifié, vérifiez s'il existe
+//     if (folder) {
+//         try {
+//             const stat = await fs.stat(uploadDir);
+//             if (!stat.isDirectory()) {
+//                 // Si le chemin spécifié n'est pas un dossier, retournez une erreur 400
+//                 return res.sendStatus(400);
+//             }
+//         } catch (error) {
+//             // Si une erreur se produit lors de l'accès au dossier, retournez une erreur 404
+//             return res.sendStatus(404);
+//         }
+//     }
+//
+//     try {
+//         // Vérifiez si un fichier est présent dans la requête
+//         if (!req.files || !req.files.file) {
+//             return res.sendStatus(400);
+//         }
+//         // Copiez le fichier dans le dossier spécifié ou à la racine
+//         const destination = folder ? uploadDir : tmpdir;
+//         await fs.copyFile(req.files.file.file, path.join(destination, req.files.file.filename));
+//         // Supprimez le fichier temporaire
+//         await fs.rm(join(tmpdir, req.files.file.uuid), {recursive: true})
+//
+//         return res.sendStatus(201);
+//     } catch (error) {
+//         console.error(error);
+//         return res.sendStatus(500);
+//     }
+// });
 module.exports = router;
