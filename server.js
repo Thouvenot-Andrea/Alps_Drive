@@ -1,12 +1,13 @@
-const {promises: fs} = require("fs");
 const express = require('express');
 const app = express();
+const {promises: fs} = require("fs");
 const morgan = require('morgan');
 const path = require('path');
 const os = require("os");
 const tmpdir = path.join(os.tmpdir(), "/");
 const busboy = require("express-busboy");
 const {join} = require("path");
+
 busboy.extend(app,{
     upload:true,
     path:tmpdir
@@ -21,8 +22,11 @@ function start() {
     /*configurer notre API, pour informer les navigateurs qu'elle peut être consommée depuis n’importe quelle origine.*/
     app.use((req, res, next) => {
         res.header('Access-Control-Allow-Origin', '*');
+        // autorise toutes les origines (sites web) à accéder aux ressources de mon serveur
         res.header('Access-Control-Allow-Methods', '*');
+        // permet à toutes les méthodes HTTP (GET, POST, PUT, DELETE, etc) à accéder aux ressources de mon serveur
         res.header('Access-Control-Allow-Headers', '*');
+        // autorise tous les en-têtes HTTP dans la requête. Elles sont utilisés pour transmettre des infos supplémentaires entre le client et le serveur
         next();
     });
 

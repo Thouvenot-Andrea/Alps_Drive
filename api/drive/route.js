@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
+// fs = file system
 const os = require("os");
 const path = require('path');
 const {join} = require("path");
@@ -12,12 +13,18 @@ router.get("/", (req, res) => {
 
 // ---------------Retourne une liste contenant les dossiers et fichiers à la racine du “drive”---------------------------
 const tmpdir = join(os.tmpdir(), "/");
+/*join() du module path pour concaténer plusieurs parties de chemin ensemble de manière sûre et portable/
+os.tmpdir() revoie le répertoire par défaut pour les fichiers temporaires en linux '/tpm'
+ / le / ne change rien là, mais si je mes api/drive le répertoire par défaut sera api/drive. */
 router.get('/api/drive', async (req, res) => {
 
     try {
         const files = await fs.readdir(tmpdir);
         const dataFiles = await Promise.all(files.map(async fileName => {
-            const fileInfo = await fs.stat(path.join(tmpdir, fileName));
+        // promise.all pour attendre que toutes les promesses retournées par files.map soit résolues
+        // files.map crée un tableau de promesses où chaque promesse correspond à l'exécution de la fonction 'async' pour chaque fichier "files"
+        // async fileName fonction de rappel asynchrone traite chaque fichier, elle attende que fs.stat soient résolu pour obtenir les informations
+            const fileInfo = await fs.stat(join(tmpdir, fileName));
             return {
                 name: fileName,
                 isFolder: fileInfo.isDirectory(),
@@ -33,17 +40,18 @@ router.get('/api/drive', async (req, res) => {
 // //---------------------------------------Retourne le contenu de {name}--------------------------------------------------
 router.get("/api/drive/:name", async (req, res) => {// ajout de ?
     const name = req.params.name;
-    const filePath = path.join(tmpdir, name)
+    const filePath =join(tmpdir, name)
     try {
         const fileInfo = await fs.stat(filePath);
         if (fileInfo.isDirectory()) {
             const files = await fs.readdir(filePath);
             const dataFiles = await Promise.all(files.map(async fileName => {
-                const fileInfo = await fs.stat(path.join(filePath, fileName));
+                //la function asynchrone est définie comme une fonction fléchée prenant fileName comme argument
+                const info = await fs.stat(join(filePath));
                 return {
                     name: fileName,
-                    isFolder: fileInfo.isDirectory(),
-                    size: fileInfo.size
+                    isFolder: info.isDirectory(),
+                    size: info.size
                 };
             }));
             res.status(200).json(dataFiles);
@@ -62,10 +70,11 @@ router.get("/api/drive/:name", async (req, res) => {// ajout de ?
 //-------------------------------------------------Créer un dossier avec le nom {name}---------------------------------------------------------------------
 router.post("/api/drive", async (req, res) => {
     const {name} = req.query;
+    //si on veut sortir une propriété spécifier que d'un object en JS, on spécifie le nom de la propriété entre accolades({}) pour utiliser la syntaxe de déstructuration.
     if (!/^[a-zA-Z0-9-_]+$/.test(name)) {
         return res.status(400).send("Le nom du dossier ne doit contenir que des caractères alphanumériques, - ou _");
     }
-    const folderPath = path.join(tmpdir, name);
+    const folderPath = join(tmpdir, name);
     try {
         await fs.mkdir(folderPath);
         res.sendStatus(201);
@@ -77,10 +86,14 @@ router.post("/api/drive/:folder", async (req, res) => {
     const {folder} = req.params;
     const {name} = req.query;
 
-    if (!name || !/^[a-zA-Z0-9_-]+$/.test(name)) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(name)) {
+        // les /.../ syntaxe utilisée pour définir une expression régulière en JS
+        // ^ indique le début de la chaîne de caractère
+        //+ signifie une où plusieurs occurrences
+        // .test(name) vérifie  si c'est true ou false
         return res.status(400).send("Le nom du dossier n'est pas correct, il doit contenir uniquement des caractères alphanumériques.");
     }
-    const folderPath = path.join(tmpdir, folder, name);
+    const folderPath = join(tmpdir, folder, name);
     try {
         await fs.mkdir(folderPath, {recursive: true});
         res.sendStatus(201);
@@ -92,7 +105,7 @@ router.post("/api/drive/:folder", async (req, res) => {
 //-------------------------------------Suppression d’un dossier ou d’un fichier avec le nom-----------------------------
 router.delete("/api/drive/:name", async (req, res) => {
     const name = req.params.name;
-    const filePath = path.join(os.tmpdir(), name);
+    const filePath = join(os.tmpdir(), name);
     try {
         const fileInfos = await fs.stat(filePath);
         if (fileInfos.isDirectory()) {
@@ -109,7 +122,7 @@ router.delete("/api/drive/:name", async (req, res) => {
 
 router.delete("/api/drive/:folder/:name", async (req, res) => {
     const {folder, name} = req.params;
-    const folderPath = path.join(tmpdir, folder, name);
+    const folderPath = join(tmpdir, folder, name);
     try {
         const fileInfos = await fs.stat(folderPath);
         if (fileInfos.isDirectory()) {
