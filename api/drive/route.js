@@ -5,17 +5,14 @@ const fs = require('fs').promises;
 const os = require("os");
 const path = require('path');
 const {join} = require("path");
-
-
-router.get("/", (req, res) => {
-    res.json({message: "Got it!"})
-})
-
-// ---------------Retourne une liste contenant les dossiers et fichiers à la racine du “drive”---------------------------
 const tmpdir = join(os.tmpdir(), "/");
 /*join() du module path pour concaténer plusieurs parties de chemin ensemble de manière sûre et portable/
 os.tmpdir() revoie le répertoire par défaut pour les fichiers temporaires en linux '/tpm'
  / le / ne change rien là, mais si je mes api/drive le répertoire par défaut sera api/drive. */
+router.get("/", (req, res) => {
+    res.json({message: "Got it!"})
+})
+// ---------------Retourne une liste contenant les dossiers et fichiers à la racine du “drive”---------------------------
 router.get('/api/drive', async (req, res) => {
 
     try {
@@ -37,7 +34,7 @@ router.get('/api/drive', async (req, res) => {
     }
 })
 
-// //---------------------------------------Retourne le contenu de {name}--------------------------------------------------
+//---------------------------------------Retourne le contenu de {name}--------------------------------------------------
 router.get("/api/drive/:name", async (req, res) => {// ajout de ?
     const name = req.params.name;
     const filePath =join(tmpdir, name)
