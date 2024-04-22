@@ -1,9 +1,10 @@
 {
   "name": "alps_drive",
   "version": "1.0.0",
-  "main": "main.js",
+  "main": "src/main.js",
   "scripts": {
-    "start": "nodemon main.js",
+    "start": "nodemon src/main.js",
+    "start-prod": "node src/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
