@@ -15,7 +15,7 @@ router.get("/", (req, res) => {
 const tmpdir = join(os.tmpdir(), "/");
 /*join() du module path pour concaténer plusieurs parties de chemin ensemble de manière sûre et portable/
 os.tmpdir() revoie le répertoire par défaut pour les fichiers temporaires en linux '/tpm'
- / le / ne change rien là, mais si je mes api/drive le répertoire par défaut sera api/drive. */
+ / le / ne change rien là, mais si je mes route.bis/drive le répertoire par défaut sera route.bis/drive. */
 router.get('/api/drive', async (req, res) => {
 
     try {
@@ -175,7 +175,7 @@ router.put('/api/drive/:folder', async (req, res) => {
 
 //--------------------------------------------------version simplifier--------------------------------------------------
 // const tmpdir = join(os.tmpdir(),"/");
-// router.get("/api/drive/:name?", async (req, res) => {// ajout de ?
+// router.get("/route.bis/drive/:name?", async (req, res) => {// ajout de ?
 //     const name = req.params.name;
 //     const filePath =  name ? path.join(tmpdir, name): tmpdir // juste ajouter name ? et : tmpdir
 //     try {
@@ -201,7 +201,7 @@ router.put('/api/drive/:folder', async (req, res) => {
 //         res.status(404).send("Error");
 //     }
 // });
-// router.post("/api/drive/:folder?", async (req, res) => {
+// router.post("/route.bis/drive/:folder?", async (req, res) => {
 //     const { folder } = req.params;
 //     const { name } = req.query;
 //     const folderPath = folder ? path.join(tmpdir, folder, name) : path.join(tmpdir, name);
@@ -216,7 +216,7 @@ router.put('/api/drive/:folder', async (req, res) => {
 //         res.status(500).send(`Impossible de créer le dossier: ${error}`);
 //     }
 // });
-// router.delete("/api/drive/:folder?/:name", async (req, res) => {
+// router.delete("/route.bis/drive/:folder?/:name", async (req, res) => {
 //     const {folder, name} = req.params;
 //     const folderPath = folder ? path.join(tmpdir, folder,name) : path.join(tmpdir,name);
 //     try {
@@ -232,7 +232,7 @@ router.put('/api/drive/:folder', async (req, res) => {
 //         res.status(400).send('erreur')
 //     }
 // })
-// router.put('/api/drive/:folder?', async (req, res) => {
+// router.put('/route.bis/drive/:folder?', async (req, res) => {
 //     const folder = req.params.folder;
 //     const uploadDir = folder ? path.join(tmpdir, folder) : tmpdir;
 //

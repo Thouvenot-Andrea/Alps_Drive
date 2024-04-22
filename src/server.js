@@ -37,7 +37,7 @@ function start() {
 //         const nom = require("./routes/x")
 //         app.use("/nom", nom)
 //route.js---------------------------------------------------------------------
-    const route = require("./api/drive/route");
+    const route = require("./route");
     app.use("", route)
 
 }
